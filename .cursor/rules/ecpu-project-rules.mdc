@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# eCPU Project Rules
+- Follow SystemVerilog coding standards
+- Every module must have a corresponding cocotb test
+- Use consistent signal naming: clk_i, rst_i, data_o
+- Document all interfaces in markdown
+- Generate TODO items for any unimplemented features

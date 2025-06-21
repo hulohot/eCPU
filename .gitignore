@@ -1,0 +1,145 @@
+# eCPU Project .gitignore
+# 
+# This file specifies which files and directories should be ignored by git
+
+# Build outputs
+build/
+obj_dir/
+*.vvp
+*.fst
+*.vcd
+*.ghw
+*.cf
+
+# Synthesis outputs
+*.asc
+*.bin
+*.json
+*.rpt
+*.log
+synthesis/*/build/
+
+# Simulation outputs
+results.xml
+test_*_results/
+sim_build/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist/
+build/
+.pytest_cache/
+
+# Waveform files
+*.vcd
+*.fst
+*.ghw
+*.saif
+*.shm
+*.trn
+*.dsn
+
+# Temporary files
+*~
+*.swp
+*.swo
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-*
+tags
+TAGS
+
+# Tool-specific files
+# Verilator
+obj_dir/
+*.d
+
+# Yosys
+*.ys.log
+abc.history
+
+# nextpnr
+*.place
+*.route
+
+# Vivado/Quartus (if used later)
+*.xpr
+*.qpf
+*.qsf
+*.qarr
+*.jdi
+.Xil/
+vivado*.log
+vivado*.jou
+
+# Coverage files
+htmlcov/
+.coverage
+coverage.xml
+
+# Documentation build
+docs/_build/
+docs/build/
+
+# Python virtual environments
+venv/
+env/
+ENV/
+.env
+
+# MacOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows specific
+ehthumbs.db
+Desktop.ini
+
+# Linux specific
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# Backup files
+*.bak
+*.orig
+*.rej
+
+# Log files
+*.log
+
+# IDE/Editor specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/.ropeproject
+
+# Project specific temporary files
+TODO_backup.md
+notes/
+scratch/
+
+# Don't ignore important config files that should be tracked
+!.github/
+!scripts/
+!docs/
+!synthesis/*/*.pcf
+!synthesis/*/*.sdc
+!verification/*/
+!software/*/
+!rtl/*/ 

@@ -1,0 +1,68 @@
+# iCEBreaker Pin Constraints for eCPU
+# 
+# This file defines the pin mapping for the eCPU on the iCEBreaker board
+# Based on the iCEBreaker pinout and standard connections
+#
+# Author: Ethan
+# Date: 2024
+
+# Clock (12 MHz onboard oscillator)
+set_io clk_i 35
+
+# Reset button (active low, inverted in top level)
+set_io rst_n_i 10
+
+# LEDs for debugging (8 LEDs available)
+set_io debug_led_o[0] 37
+set_io debug_led_o[1] 38
+set_io debug_led_o[2] 39
+set_io debug_led_o[3] 40
+set_io debug_led_o[4] 41
+set_io debug_led_o[5] 42
+set_io debug_led_o[6] 43
+set_io debug_led_o[7] 44
+
+# UART (for debug output)
+set_io uart_tx_o 14
+set_io uart_rx_i 15
+
+# SPI Flash (for program loading)
+set_io flash_csn_o 16
+set_io flash_clk_o 17
+set_io flash_mosi_o 18
+set_io flash_miso_i 19
+
+# GPIO (PMOD connectors for external connections)
+# PMOD1A (pins 1-4)
+set_io gpio_o[0] 4
+set_io gpio_o[1] 2
+set_io gpio_o[2] 47
+set_io gpio_o[3] 45
+
+# PMOD1B (pins 7-10)
+set_io gpio_o[4] 3
+set_io gpio_o[5] 48
+set_io gpio_o[6] 46
+set_io gpio_o[7] 9
+
+# Additional debug signals (PMOD2A)
+set_io debug_pc_valid_o 21
+set_io debug_instr_valid_o 20
+set_io debug_stall_o 26
+set_io debug_branch_taken_o 27
+
+# Performance counter outputs (for debugging)
+# These can be connected to logic analyzer or oscilloscope
+set_io perf_cycle_tick_o 32
+set_io perf_instr_tick_o 34
+set_io perf_stall_tick_o 31
+
+# Timing constraints for the 12 MHz clock
+create_clock -name clk -period 83.33 [get_ports clk_i]
+
+# Input/output delays
+set_input_delay -clock clk 10 [all_inputs]
+set_output_delay -clock clk 10 [all_outputs]
+
+# Clock uncertainty
+set_clock_uncertainty 5 [get_clocks clk] 
