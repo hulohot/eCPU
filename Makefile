@@ -16,7 +16,7 @@ YOSYS = yosys
 NEXTPNR = nextpnr-ice40
 ICEPACK = icepack
 ICEPROG = iceprog
-PYTHON = python3
+PYTHON = python3.11
 COCOTB_TEST = cocotb-test
 
 # iCEBreaker specific configuration
@@ -79,7 +79,7 @@ sim-all: sim-verilator sim-icarus
 test-alu:
 	@echo "Running ALU tests..."
 	cd $(TEST_DIR)/cocotb && \
-	$(PYTHON) -m pytest test_alu.py -v --tb=short
+	SIM=verilator $(PYTHON) test_alu.py
 
 test-regfile:
 	@echo "Running register file tests..."
