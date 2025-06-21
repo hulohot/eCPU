@@ -16,7 +16,7 @@ YOSYS = yosys
 NEXTPNR = nextpnr-ice40
 ICEPACK = icepack
 ICEPROG = iceprog
-PYTHON = python3.11
+PYTHON = python3
 COCOTB_TEST = cocotb-test
 
 # iCEBreaker specific configuration
@@ -79,12 +79,30 @@ sim-all: sim-verilator sim-icarus
 test-alu:
 	@echo "Running ALU tests..."
 	cd $(TEST_DIR)/cocotb && \
-	SIM=verilator $(PYTHON) test_alu.py
+	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	$(PYTHON) -c "\
+from cocotb_test.simulator import run; \
+run( \
+    verilog_sources=['../../rtl/core/alu.sv'], \
+    toplevel='alu', \
+    module='test_alu', \
+    simulator='verilator', \
+    extra_args=['--trace', '--trace-structs'] \
+)"
 
 test-regfile:
 	@echo "Running register file tests..."
 	cd $(TEST_DIR)/cocotb && \
-	$(PYTHON) -m pytest test_regfile.py -v --tb=short
+	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	$(PYTHON) -c "\
+from cocotb_test.simulator import run; \
+run( \
+    verilog_sources=['../../rtl/core/regfile.sv'], \
+    toplevel='regfile', \
+    module='test_regfile', \
+    simulator='verilator', \
+    extra_args=['--trace', '--trace-structs'] \
+)"
 
 test-memory:
 	@echo "Running memory tests..."

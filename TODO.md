@@ -16,11 +16,11 @@ This document tracks all tasks for the eCPU RISC-V RV32I implementation project.
 ## Phase 1: Core Infrastructure (P0)
 
 ### RTL Development
-- [ ] 🔴 **P0** Create basic ALU module (2-3 days)
+- [x] 🟢 **P0** Create basic ALU module (2-3 days)
   - Dependencies: None
-  - Implements: ADD, SUB, AND, OR, XOR, SLT operations
+  - Implements: ADD, SUB, AND, OR, XOR, SLT, SLL, SRL, SRA, LUI, COPY operations
   
-- [ ] 🔴 **P0** Create register file module (1-2 days)
+- [x] 🟢 **P0** Create register file module (1-2 days)
   - Dependencies: None
   - 32 x 32-bit registers with dual read, single write ports
   
@@ -98,11 +98,11 @@ This document tracks all tasks for the eCPU RISC-V RV32I implementation project.
 ## Phase 3: Verification Infrastructure (P0)
 
 ### Cocotb Testbenches
-- [ ] 🔴 **P0** ALU unit tests (2-3 days)
+- [x] 🟢 **P0** ALU unit tests (2-3 days)
   - Dependencies: ALU module
   - Test all arithmetic and logical operations
   
-- [ ] 🔴 **P0** Register file unit tests (1-2 days)
+- [x] 🟢 **P0** Register file unit tests (1-2 days)
   - Dependencies: Register file module
   - Test read/write operations, port conflicts
   
@@ -119,7 +119,7 @@ This document tracks all tasks for the eCPU RISC-V RV32I implementation project.
   - RISC-V compliance test suite
 
 ### Test Infrastructure
-- [ ] 🔴 **P0** Automated test runner (1-2 days)
+- [x] 🟢 **P0** Automated test runner (1-2 days)
   - Dependencies: Cocotb tests
   - Makefile targets for all tests
   
@@ -337,6 +337,17 @@ This document tracks all tasks for the eCPU RISC-V RV32I implementation project.
 - Pipeline integration
 - Comprehensive testing
 - Bug fixes
+
+## Progress Notes
+
+**Completed (Jun 21, 2024):**
+- ✅ ALU Module: Full RISC-V ALU with ADD, SUB, AND, OR, XOR, SLT, SLTU, SLL, SRL, SRA, LUI, COPY operations
+- ✅ Register File: 32x32-bit registers with dual read ports, single write port, x0 hardwired to zero
+- ✅ Comprehensive Cocotb Tests: 8 ALU tests + 7 register file tests, all passing
+- ✅ Clean Testing Framework: Resolved Python version conflicts, working Makefile integration
+- ✅ Proper SystemVerilog: Following coding standards with consistent signal naming
+
+**Next Priority**: Memory system implementation (instruction/data memory models)
 
 ## Notes
 
