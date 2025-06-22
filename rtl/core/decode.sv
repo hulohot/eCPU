@@ -312,6 +312,13 @@ module decode #(
     assign rs2_addr_o = rs2_addr;
     
     // ========================================
+    // Stall Signal (Combinational)
+    // ========================================
+    
+    // Stall output should immediately reflect stall input
+    assign stall_o = stall_i;
+    
+    // ========================================
     // Pipeline Register
     // ========================================
     
@@ -334,7 +341,6 @@ module decode #(
             branch_o <= 1'b0;
             jump_o <= 1'b0;
             branch_type_o <= 3'b000;
-            stall_o <= 1'b0;
         end else if (!stall_i) begin
             pc_o <= pc_i;
             instr_o <= instr_i;
@@ -353,11 +359,8 @@ module decode #(
             branch_o <= branch;
             jump_o <= jump;
             branch_type_o <= branch_type;
-            stall_o <= 1'b0;
-        end else begin
-            // Hold current values during stall
-            stall_o <= stall_i;
         end
+        // When stalled, hold current values (no updates needed as they're preserved automatically)
     end
     
     // ========================================
