@@ -139,5 +139,10 @@ run( \
     extra_args=['--trace', '--trace-structs'] \
 )"
 
+clean:
+	rm -rf __pycache__
+	rm -rf .pytest_cache
+	rm -rf sim_build
+
 # Run all tests
 test-all: test-alu test-regfile test-instruction_memory test-data_memory test-fetch test-decode test-execute test-memory_stage test-writeback test-hazard_unit 
