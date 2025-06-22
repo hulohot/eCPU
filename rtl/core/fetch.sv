@@ -80,8 +80,8 @@ module fetch #(
     // PC Register
     // ========================================
     
-    // PC update enable: update when not stalled and memory access completes
-    assign pc_update_enable = !stall_i && (imem_ack_i || !imem_cyc_o);
+    // PC update enable: immediate for branches, wait for memory for normal increments
+    assign pc_update_enable = !stall_i && (branch_taken_i || (ENABLE_BRANCH_PREDICTION && bp_prediction_i) || imem_ack_i);
     
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
@@ -89,7 +89,7 @@ module fetch #(
         end else if (pc_update_enable) begin
             pc_reg <= pc_next;
         end
-        // Hold PC during stall
+        // Hold PC during stall or memory wait
     end
     
     // ========================================

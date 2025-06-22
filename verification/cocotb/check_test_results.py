@@ -118,7 +118,7 @@ def find_xml_files(sim_build_dir):
     return valid_files
 
 def group_results_by_module(results):
-    """Group test results by module name."""
+    """Group test results by module name, keeping only the most recent result per module."""
     modules = defaultdict(list)
     
     for result in results:
@@ -156,7 +156,23 @@ def group_results_by_module(results):
             
             modules[module_name].append(result)
     
-    return modules
+    # Keep only the most recent result for each module
+    filtered_modules = {}
+    for module_name, module_results in modules.items():
+        if len(module_results) == 1:
+            # Only one result, keep it
+            filtered_modules[module_name] = module_results
+        else:
+            # Multiple results, keep only the most recent one
+            most_recent = max(module_results, key=lambda r: r['timestamp'])
+            filtered_modules[module_name] = [most_recent]
+            
+            # Log which files were ignored for transparency
+            ignored_files = [r['file'] for r in module_results if r != most_recent]
+            if ignored_files:
+                console.print(f"[dim]Note: Ignoring older {module_name} results: {', '.join(ignored_files)}[/dim]")
+    
+    return filtered_modules
 
 def get_status_style(passed, failed, errors):
     """Get Rich style for test status."""

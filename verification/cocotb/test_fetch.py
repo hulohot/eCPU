@@ -141,24 +141,22 @@ async def test_fetch_branch_taken(dut):
     # Reset
     await tb.reset()
     
-    # Set up branch before memory response
+    # Set up branch signals
     branch_target = 0x00001000
     dut.branch_taken_i.value = 1
     dut.branch_target_i.value = branch_target
     
-    # Provide memory response which will trigger PC update
-    dut.imem_ack_i.value = 1
-    dut.imem_dat_i.value = 0x00000013
-    
-    # PC should update on this rising edge since pc_update_enable will be high
+    # Wait for one clock edge to let branch take effect
     await RisingEdge(dut.clk_i)
     
-    # Clear signals
-    dut.branch_taken_i.value = 0
-    dut.imem_ack_i.value = 0
+    # Allow time for PC output to settle
+    await Timer(1, units="ns")
     
     # Check that PC is updated to branch target
     assert dut.pc_o.value == branch_target, f"PC should jump to branch target 0x{branch_target:08x}, got 0x{int(dut.pc_o.value):08x}"
+    
+    # Clear branch signals  
+    dut.branch_taken_i.value = 0
 
 
 @cocotb.test()
@@ -175,24 +173,22 @@ async def test_fetch_branch_prediction(dut):
     # Reset
     await tb.reset()
     
-    # Set up branch prediction before memory response
+    # Set up branch prediction signals
     predicted_target = 0x00002000
     dut.bp_prediction_i.value = 1
     dut.bp_target_i.value = predicted_target
     
-    # Provide memory response which will trigger PC update
-    dut.imem_ack_i.value = 1
-    dut.imem_dat_i.value = 0x00000013
-    
-    # PC should update on this rising edge since pc_update_enable will be high
+    # Wait for one clock edge to let prediction take effect
     await RisingEdge(dut.clk_i)
     
-    # Clear signals
-    dut.bp_prediction_i.value = 0
-    dut.imem_ack_i.value = 0
+    # Allow time for PC output to settle
+    await Timer(1, units="ns")
     
     # Check that PC is updated to predicted target
     assert dut.pc_o.value == predicted_target, f"PC should jump to predicted target 0x{predicted_target:08x}, got 0x{int(dut.pc_o.value):08x}"
+    
+    # Clear prediction signals
+    dut.bp_prediction_i.value = 0
 
 
 @cocotb.test()
@@ -209,7 +205,7 @@ async def test_fetch_branch_priority(dut):
     # Reset
     await tb.reset()
     
-    # Set both branch taken and prediction before memory response
+    # Set both branch taken and prediction signals
     branch_target = 0x00001000
     predicted_target = 0x00002000
     
@@ -218,20 +214,18 @@ async def test_fetch_branch_priority(dut):
     dut.bp_prediction_i.value = 1
     dut.bp_target_i.value = predicted_target
     
-    # Provide memory response which will trigger PC update
-    dut.imem_ack_i.value = 1
-    dut.imem_dat_i.value = 0x00000013
-    
-    # PC should update on this rising edge since pc_update_enable will be high
+    # Wait for one clock edge to let signals take effect
     await RisingEdge(dut.clk_i)
+    
+    # Allow time for PC output to settle
+    await Timer(1, units="ns")
+    
+    # Branch taken should have priority
+    assert dut.pc_o.value == branch_target, f"branch_taken should have priority: expected 0x{branch_target:08x}, got 0x{int(dut.pc_o.value):08x}"
     
     # Clear signals
     dut.branch_taken_i.value = 0
     dut.bp_prediction_i.value = 0
-    dut.imem_ack_i.value = 0
-    
-    # Branch taken should have priority
-    assert dut.pc_o.value == branch_target, f"branch_taken should have priority: expected 0x{branch_target:08x}, got 0x{int(dut.pc_o.value):08x}"
 
 
 @cocotb.test()

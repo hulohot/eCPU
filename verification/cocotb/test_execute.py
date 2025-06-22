@@ -37,7 +37,7 @@ class ExecuteTestbench:
         await RisingEdge(self.dut.clk_i)
         
     def set_inputs(self, pc=0, instr=0, instr_valid=1, rs1_data=0, rs2_data=0, 
-                   rd_addr=0, imm=0, alu_op=0, reg_write=0, mem_read=0, mem_write=0,
+                   rd_addr=0, imm=0, alu_op=0, alu_src=0, reg_write=0, mem_read=0, mem_write=0,
                    mem_size=0, branch=0, jump=0, branch_type=0, stall=0,
                    forward_a=0, forward_b=0, alu_result_mem=0, rd_data_wb=0):
         """Set execute module inputs"""
@@ -49,6 +49,7 @@ class ExecuteTestbench:
         self.dut.rd_addr_i.value = rd_addr
         self.dut.imm_i.value = imm
         self.dut.alu_op_i.value = alu_op
+        self.dut.alu_src_i.value = alu_src
         self.dut.reg_write_i.value = reg_write
         self.dut.mem_read_i.value = mem_read
         self.dut.mem_write_i.value = mem_write
@@ -102,6 +103,7 @@ async def test_execute_alu_operations(dut):
     tb.set_inputs(pc=0x1000, instr=0x12345678, rs1_data=10, rs2_data=20, 
                   rd_addr=5, alu_op=0, reg_write=1)  # ALU_ADD = 0
     await tb.clock_edge()
+    await tb.clock_edge()  # Wait additional cycle for pipeline register to update
     
     # Check ALU result is passed through pipeline register
     assert dut.alu_result_o.value == 30, f"ADD result should be 30, got {dut.alu_result_o.value}"
@@ -112,6 +114,7 @@ async def test_execute_alu_operations(dut):
     # Test SUB operation
     tb.set_inputs(pc=0x1004, rs1_data=30, rs2_data=10, rd_addr=6, alu_op=1)  # ALU_SUB = 1
     await tb.clock_edge()
+    await tb.clock_edge()  # Wait additional cycle for pipeline register to update
     
     assert dut.alu_result_o.value == 20, f"SUB result should be 20, got {dut.alu_result_o.value}"
     assert dut.rd_addr_o.value == 6, f"Destination register should be 6, got {dut.rd_addr_o.value}"
@@ -132,6 +135,7 @@ async def test_execute_forwarding(dut):
     tb.set_inputs(rs1_data=10, rs2_data=20, alu_op=0, forward_a=1, 
                   alu_result_mem=100)  # Forward from memory stage
     await tb.clock_edge()
+    await tb.clock_edge()  # Wait additional cycle for pipeline register to update
     
     # Should use forwarded value (100) instead of rs1_data (10)
     assert dut.alu_result_o.value == 120, f"Forwarded ADD should be 120 (100+20), got {dut.alu_result_o.value}"
@@ -140,6 +144,7 @@ async def test_execute_forwarding(dut):
     tb.set_inputs(rs1_data=10, rs2_data=20, alu_op=0, forward_b=2, 
                   rd_data_wb=200)  # Forward from writeback stage
     await tb.clock_edge()
+    await tb.clock_edge()  # Wait additional cycle for pipeline register to update
     
     # Should use forwarded value (200) instead of rs2_data (20)
     assert dut.alu_result_o.value == 210, f"Forwarded ADD should be 210 (10+200), got {dut.alu_result_o.value}"
@@ -217,10 +222,12 @@ async def test_execute_immediate_operations(dut):
     await tb.reset()
     
     # Test immediate operation (ADDI) - should use immediate instead of rs2
-    tb.set_inputs(rs1_data=10, rs2_data=999, imm=50, alu_op=8)  # Immediate ADD (alu_op[3] = 1)
+    tb.set_inputs(rs1_data=10, rs2_data=999, imm=50, alu_op=0, alu_src=1)  # ADD with immediate source
     await tb.clock_edge()
+    await tb.clock_edge()  # Wait additional cycle for pipeline register to update
     
-    # Should use immediate (50) instead of rs2_data (999)
+    # Should use immediate (50) instead of rs2_data (999) 
+    # Expected: 10 + 50 = 60
     assert dut.alu_result_o.value == 60, f"ADDI should be 60 (10+50), got {dut.alu_result_o.value}"
 
 @cocotb.test()
@@ -236,9 +243,10 @@ async def test_execute_memory_operations(dut):
     await tb.reset()
     
     # Test load operation
-    tb.set_inputs(pc=0x1000, rs1_data=0x2000, imm=0x100, alu_op=0, 
+    tb.set_inputs(pc=0x1000, rs1_data=0x2000, imm=0x100, alu_op=0, alu_src=1,
                   mem_read=1, mem_size=2, rd_addr=5, reg_write=1)  # Load word
     await tb.clock_edge()
+    await tb.clock_edge()  # Wait additional cycle for pipeline register to update
     
     assert dut.alu_result_o.value == 0x2100, f"Load address should be rs1 + imm = 0x2100, got {dut.alu_result_o.value}"
     assert dut.mem_read_o.value == 1, f"Memory read should be propagated"
@@ -246,8 +254,9 @@ async def test_execute_memory_operations(dut):
     
     # Test store operation
     tb.set_inputs(pc=0x1004, rs1_data=0x3000, rs2_data=0xDEADBEEF, imm=0x200, 
-                  alu_op=0, mem_write=1, mem_size=2)  # Store word
+                  alu_op=0, alu_src=1, mem_write=1, mem_size=2)  # Store word
     await tb.clock_edge()
+    await tb.clock_edge()  # Wait additional cycle for pipeline register to update
     
     assert dut.alu_result_o.value == 0x3200, f"Store address should be rs1 + imm = 0x3200, got {dut.alu_result_o.value}"
     assert dut.rs2_data_o.value == 0xDEADBEEF, f"Store data should be propagated"
@@ -269,6 +278,7 @@ async def test_execute_stall_behavior(dut):
     tb.set_inputs(pc=0x1000, instr=0x12345678, rs1_data=10, rs2_data=20, 
                   rd_addr=5, alu_op=0, reg_write=1)
     await tb.clock_edge()
+    await tb.clock_edge()  # Wait for pipeline register to update
     
     # Store expected values
     expected_pc = int(dut.pc_o.value)
@@ -286,9 +296,11 @@ async def test_execute_stall_behavior(dut):
     assert dut.alu_result_o.value == expected_alu_result, f"ALU result should be held during stall"
     assert dut.stall_o.value == 1, f"Stall output should reflect stall input"
     
-    # Release stall
-    tb.set_inputs(stall=0)
+    # Release stall with the new inputs
+    tb.set_inputs(pc=0x2000, instr=0x87654321, rs1_data=100, rs2_data=200, 
+                  rd_addr=10, alu_op=1, stall=0)  # Same inputs but stall=0
     await tb.clock_edge()
+    await tb.clock_edge()  # Wait for pipeline register to update
     
     # Should now accept new values
     assert dut.pc_o.value == 0x2000, f"PC should update after stall release"
@@ -318,6 +330,7 @@ async def test_execute_random_operations(dut):
         tb.set_inputs(pc=pc, rs1_data=rs1_data, rs2_data=rs2_data, 
                       imm=imm, alu_op=alu_op, rd_addr=rd_addr, reg_write=1)
         await tb.clock_edge()
+        await tb.clock_edge()  # Wait additional cycle for pipeline register to update
         
         # Basic checks - values should be propagated
         assert dut.pc_o.value == pc, f"PC should be propagated for test {i}"

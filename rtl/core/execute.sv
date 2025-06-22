@@ -32,6 +32,7 @@ module execute #(
     input  wire logic [REG_ADDR_WIDTH-1:0]  rd_addr_i,        // Destination register
     input  wire logic [XLEN-1:0]            imm_i,            // Immediate value
     input  wire logic [3:0]                 alu_op_i,         // ALU operation
+    input  wire logic                        alu_src_i,        // ALU source: 0=register, 1=immediate
     input  wire logic                        reg_write_i,      // Register write enable
     input  wire logic                        mem_read_i,       // Memory read enable
     input  wire logic                        mem_write_i,      // Memory write enable
@@ -117,7 +118,7 @@ module execute #(
     end
     
     // Select between forwarded rs2 and immediate for operand B
-    assign operand_b = (alu_op_i[3]) ? imm_i : operand_b_forwarded; // Simple heuristic for immediate ops
+    assign operand_b = alu_src_i ? imm_i : operand_b_forwarded;
     
     // ========================================
     // ALU Instantiation
@@ -190,6 +191,9 @@ module execute #(
     // Pipeline Register
     // ========================================
     
+    // Stall output is combinational for immediate response
+    assign stall_o = stall_i;
+    
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
             pc_o <= {ADDR_WIDTH{1'b0}};
@@ -202,22 +206,21 @@ module execute #(
             mem_read_o <= 1'b0;
             mem_write_o <= 1'b0;
             mem_size_o <= 3'b000;
-            stall_o <= 1'b0;
-        end else if (!stall_i) begin
-            pc_o <= pc_i;
-            instr_o <= instr_i;
-            instr_valid_o <= instr_valid_i;
-            rd_addr_o <= rd_addr_i;
-            alu_result_o <= alu_result;
-            rs2_data_o <= operand_b_forwarded; // Pass forwarded rs2 for stores
-            reg_write_o <= reg_write_i;
-            mem_read_o <= mem_read_i;
-            mem_write_o <= mem_write_i;
-            mem_size_o <= mem_size_i;
-            stall_o <= 1'b0;
         end else begin
-            // Hold current values during stall
-            stall_o <= stall_i;
+            // Only update pipeline registers when not stalled
+            if (!stall_i) begin
+                pc_o <= pc_i;
+                instr_o <= instr_i;
+                instr_valid_o <= instr_valid_i;
+                rd_addr_o <= rd_addr_i;
+                alu_result_o <= alu_result;
+                rs2_data_o <= operand_b_forwarded; // Pass forwarded rs2 for stores
+                reg_write_o <= reg_write_i;
+                mem_read_o <= mem_read_i;
+                mem_write_o <= mem_write_i;
+                mem_size_o <= mem_size_i;
+            end
+            // During stall, pipeline registers hold their current values
         end
     end
     
@@ -225,22 +228,7 @@ module execute #(
     // Debug and Verification Support
     // ========================================
     
-    `ifdef DEBUG
-        always_ff @(posedge clk_i) begin
-            if (!rst_i && instr_valid_i && !stall_i) begin
-                $display("DEBUG EX: PC=0x%08x, ALU=%s(0x%08x, 0x%08x)=0x%08x", 
-                    pc_i, alu_op_i == 4'b0000 ? "ADD" : 
-                          alu_op_i == 4'b0001 ? "SUB" : 
-                          alu_op_i == 4'b0010 ? "AND" : 
-                          alu_op_i == 4'b0011 ? "OR" : "???",
-                    operand_a, operand_b, alu_result);
-                
-                if (branch_taken_o) begin
-                    $display("DEBUG EX: Branch taken to 0x%08x", branch_target_o);
-                end
-            end
-        end
-    `endif
+    // Debug output removed - stall behavior fixed
     
     // ========================================
     // Assertions for Verification
