@@ -1,0 +1,12 @@
+# eCPU Verification Requirements
+# Python dependencies for cocotb-based verification
+
+# Testing framework
+cocotb>=1.8.0
+
+# Enhanced terminal output
+rich>=13.0.0
+
+# Additional useful tools for verification
+pytest>=7.0.0
+coverage>=7.0.0 

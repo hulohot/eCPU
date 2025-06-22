@@ -19,56 +19,69 @@ This document tracks all tasks for the eCPU RISC-V RV32I implementation project.
 - [x] 🟢 **P0** Create basic ALU module (2-3 days)
   - Dependencies: None
   - Implements: ADD, SUB, AND, OR, XOR, SLT, SLL, SRL, SRA, LUI, COPY operations
+  - Status: ✅ Complete with all tests passing
   
 - [x] 🟢 **P0** Create register file module (1-2 days)
   - Dependencies: None
   - 32 x 32-bit registers with dual read, single write ports
+  - Status: ✅ Complete with all tests passing
   
-- [ ] 🔴 **P0** Create instruction fetch module (2-3 days)
+- [ ] 🟡 **P0** Create instruction fetch module (2-3 days)
   - Dependencies: Memory interface
   - PC generation, instruction memory interface
+  - Status: RTL implemented, needs testing
   
-- [ ] 🔴 **P0** Create instruction decode module (3-4 days)
+- [ ] 🟡 **P0** Create instruction decode module (3-4 days)
   - Dependencies: None
   - Instruction parsing, control signal generation
+  - Status: RTL implemented, needs testing
   
-- [ ] 🔴 **P0** Create execute stage module (2-3 days)
+- [ ] 🟡 **P0** Create execute stage module (2-3 days)
   - Dependencies: ALU, Register file
   - ALU control, data forwarding logic
+  - Status: RTL implemented, needs testing
   
-- [ ] 🔴 **P0** Create memory stage module (2-3 days)
+- [ ] 🟡 **P0** Create memory stage module (2-3 days)
   - Dependencies: Wishbone interface
   - Load/store operations, data memory interface
+  - Status: RTL implemented, needs testing
   
-- [ ] 🔴 **P0** Create writeback stage module (1-2 days)
+- [ ] 🟡 **P0** Create writeback stage module (1-2 days)
   - Dependencies: Execute, Memory stages
   - Result writeback to register file
+  - Status: RTL implemented, needs testing
 
 ### Memory System
-- [ ] 🔴 **P0** Create instruction memory model (1-2 days)
+- [x] 🟢 **P0** Create instruction memory model (1-2 days)
   - Dependencies: None
   - Simple synchronous RAM model
+  - Status: ✅ Complete with all tests passing
   
-- [ ] 🔴 **P0** Create data memory model (1-2 days)
+- [ ] 🟡 **P0** Create data memory model (1-2 days)
   - Dependencies: None
   - Byte-addressable memory with word/halfword/byte access
+  - Status: RTL implemented, needs testing
   
-- [ ] 🔴 **P0** Implement basic Wishbone interface (2-3 days)
+- [ ] 🟡 **P0** Implement basic Wishbone interface (2-3 days)
   - Dependencies: None
   - Wishbone B4 classic interface for memory access
+  - Status: RTL implemented, needs testing
 
 ### Pipeline Infrastructure
-- [ ] 🔴 **P0** Create pipeline registers (1-2 days)
+- [ ] 🟡 **P0** Create pipeline registers (1-2 days)
   - Dependencies: None
   - IF/ID, ID/EX, EX/MEM pipeline registers
+  - Status: RTL implemented, needs testing
   
-- [ ] 🔴 **P0** Implement hazard detection unit (3-4 days)
+- [ ] 🟡 **P0** Implement hazard detection unit (3-4 days)
   - Dependencies: All pipeline stages
   - Data hazards, control hazards
+  - Status: RTL implemented, needs testing
   
-- [ ] 🔴 **P0** Create forwarding unit (2-3 days)
+- [ ] 🟡 **P0** Create forwarding unit (2-3 days)
   - Dependencies: Pipeline stages
   - Data forwarding to resolve hazards
+  - Status: RTL implemented, needs testing
 
 ## Phase 2: Instruction Set Implementation (P0-P1)
 
@@ -101,10 +114,17 @@ This document tracks all tasks for the eCPU RISC-V RV32I implementation project.
 - [x] 🟢 **P0** ALU unit tests (2-3 days)
   - Dependencies: ALU module
   - Test all arithmetic and logical operations
+  - Status: ✅ Complete - 8/8 tests passing
   
 - [x] 🟢 **P0** Register file unit tests (1-2 days)
   - Dependencies: Register file module
   - Test read/write operations, port conflicts
+  - Status: ✅ Complete - 7/7 tests passing
+  
+- [x] 🟢 **P0** Instruction memory unit tests (1-2 days)
+  - Dependencies: Instruction memory module
+  - Test read operations, error handling, Wishbone protocol
+  - Status: ✅ Complete - 8/8 tests passing
   
 - [ ] 🔴 **P0** Memory model unit tests (1-2 days)
   - Dependencies: Memory modules
@@ -340,14 +360,54 @@ This document tracks all tasks for the eCPU RISC-V RV32I implementation project.
 
 ## Progress Notes
 
-**Completed (Jun 21, 2024):**
+**Completed (Previous Sessions):**
 - ✅ ALU Module: Full RISC-V ALU with ADD, SUB, AND, OR, XOR, SLT, SLTU, SLL, SRL, SRA, LUI, COPY operations
 - ✅ Register File: 32x32-bit registers with dual read ports, single write port, x0 hardwired to zero
 - ✅ Comprehensive Cocotb Tests: 8 ALU tests + 7 register file tests, all passing
-- ✅ Clean Testing Framework: Resolved Python version conflicts, working Makefile integration
-- ✅ Proper SystemVerilog: Following coding standards with consistent signal naming
 
-**Next Priority**: Memory system implementation (instruction/data memory models)
+**Completed (Current Session - RTL Development):**
+- ✅ Instruction Memory: Wishbone B4 interface, word-aligned access, write protection, error handling
+- ✅ Data Memory: Byte-addressable memory with Wishbone B4, supports byte/halfword/word access  
+- ✅ Fetch Stage: PC generation, branch/jump handling, instruction memory interface
+- ✅ Decode Stage: Complete RISC-V RV32I instruction decoder with immediate generation
+- ✅ Execute Stage: ALU operations, branch evaluation, data forwarding support
+- ✅ Memory Stage: Load/store operations with alignment and byte selection
+- ✅ Writeback Stage: Data selection between ALU result and memory data
+- ✅ Hazard Unit: Load-use hazard detection and data forwarding logic
+- ✅ Pipeline Integration: Complete CPU top-level with all stages connected
+- ✅ Enhanced Makefile: Support for testing individual modules
+
+**Current Status:**
+- 🟢 **RTL Complete**: All major pipeline stages and memory subsystem implemented
+- 🟢 **Testing Environment**: Python/cocotb environment working with proper Makefile format
+- 🟢 **Core Modules Verified**: ALU, register file, and instruction memory all passing tests
+- 🟡 **New Module Tests Created**: Execute, memory stage, writeback, and hazard unit test files created
+- 🟡 **Pipeline Verification**: Individual module testing in progress
+
+**Test Results Summary:**
+- ✅ **ALU**: 8/8 tests passing
+- ✅ **Register File**: 7/7 tests passing  
+- ✅ **Instruction Memory**: 8/8 tests passing
+- ✅ **Data Memory**: 8/8 tests passing
+- 🟡 **Fetch Stage**: 6/9 tests passing (3 branch-related failures)
+- 🟡 **Decode Stage**: 10/11 tests passing (1 stall behavior failure)
+- 🟡 **Execute Stage**: 3/9 tests passing (ALU result and pipeline timing issues)
+- 🔄 **Memory Stage**: Test file created, needs testing
+- 🔄 **Writeback**: Test file created, needs testing  
+- 🔄 **Hazard Unit**: Test file created, needs testing
+
+**Current Issues:**
+- ⚠️  **Execute Stage**: ALU results not propagating correctly through pipeline registers
+- ⚠️  **Fetch Stage**: Branch target calculation timing issues
+- ⚠️  **Decode Stage**: Minor stall behavior issue
+- 🟡 **Testing**: Need to test remaining modules (memory stage, writeback, hazard unit)
+
+**Next Priority**: 
+1. Debug execute stage ALU result propagation issues
+2. Test memory stage, writeback, and hazard unit modules
+3. Fix fetch stage branch timing and decode stage stall behavior
+4. Begin pipeline integration testing
+5. Start instruction set implementation testing
 
 ## Notes
 

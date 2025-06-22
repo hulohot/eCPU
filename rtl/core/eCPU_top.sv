@@ -166,6 +166,30 @@ module eCPU_top #(
     assign debug_valid_o = instr_valid_m;
     
     // ========================================
+    // Register File Instantiation
+    // ========================================
+    
+    regfile #(
+        .XLEN(XLEN),
+        .REG_ADDR_WIDTH(REG_ADDR_WIDTH),
+        .NUM_REGS(32)
+    ) u_regfile (
+        .clk_i(clk_i),
+        .rst_i(rst_i),
+        
+        // Read ports
+        .rs1_addr_i(rs1_addr_d),
+        .rs1_data_o(rs1_data_d),
+        .rs2_addr_i(rs2_addr_d),
+        .rs2_data_o(rs2_data_d),
+        
+        // Write port
+        .rd_addr_i(rd_addr_w),
+        .rd_data_i(rd_data_w),
+        .rd_we_i(reg_write_w)
+    );
+    
+    // ========================================
     // Pipeline Stage Instantiations
     // ========================================
     
@@ -221,9 +245,11 @@ module eCPU_top #(
         .instr_valid_i(instr_valid_f),
         .stall_i(hazard_stall),
         
-        // Register file interface
+        // Register file interface (data comes from register file)
         .rs1_data_i(rs1_data_d),
         .rs2_data_i(rs2_data_d),
+        .rs1_addr_o(rs1_addr_d),  // Address to register file
+        .rs2_addr_o(rs2_addr_d),  // Address to register file
         
         // Writeback interface
         .rd_addr_wb_i(rd_addr_w),
@@ -234,8 +260,8 @@ module eCPU_top #(
         .pc_o(pc_d),
         .instr_o(instr_d),
         .instr_valid_o(instr_valid_d),
-        .rs1_addr_o(rs1_addr_d),
-        .rs2_addr_o(rs2_addr_d),
+        .rs1_addr_reg_o(),  // Not used - internal signal
+        .rs2_addr_reg_o(),  // Not used - internal signal
         .rd_addr_o(rd_addr_d),
         .rs1_data_o(rs1_data_d),
         .rs2_data_o(rs2_data_d),
@@ -349,7 +375,8 @@ module eCPU_top #(
     // Writeback Stage
     writeback #(
         .XLEN(XLEN),
-        .REG_ADDR_WIDTH(REG_ADDR_WIDTH)
+        .REG_ADDR_WIDTH(REG_ADDR_WIDTH),
+        .ILEN(ILEN)
     ) u_writeback (
         .clk_i(clk_i),
         .rst_i(rst_i),
@@ -359,6 +386,7 @@ module eCPU_top #(
         .alu_result_i(alu_result_m),
         .mem_data_i(mem_data_m),
         .reg_write_i(reg_write_m),
+        .instr_i(instr_m),
         
         // Outputs to register file
         .rd_addr_o(rd_addr_w),
