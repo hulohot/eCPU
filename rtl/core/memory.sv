@@ -98,7 +98,7 @@ module memory #(
     always_comb begin
         aligned_store_data = {XLEN{1'b0}};
         case (mem_size_i)
-            MEM_BYTE: begin
+            MEM_BYTE, MEM_BYTE_U: begin
                 case (byte_offset)
                     2'b00: aligned_store_data = {24'h0, rs2_data_i[7:0]};
                     2'b01: aligned_store_data = {16'h0, rs2_data_i[7:0], 8'h0};
@@ -106,7 +106,7 @@ module memory #(
                     2'b11: aligned_store_data = {rs2_data_i[7:0], 24'h0};
                 endcase
             end
-            MEM_HALFWORD: begin
+            MEM_HALFWORD, MEM_HALFWORD_U: begin
                 case (byte_offset[1])
                     1'b0: aligned_store_data = {16'h0, rs2_data_i[15:0]};
                     1'b1: aligned_store_data = {rs2_data_i[15:0], 16'h0};
@@ -126,7 +126,7 @@ module memory #(
     always_comb begin
         byte_select = 4'b0000;
         case (mem_size_i)
-            MEM_BYTE: begin
+            MEM_BYTE, MEM_BYTE_U: begin
                 case (byte_offset)
                     2'b00: byte_select = 4'b0001;
                     2'b01: byte_select = 4'b0010;
