@@ -156,7 +156,7 @@ async def test_cpu_basic_arithmetic(dut):
     await env.run_cycles(10)
     
     # Check that the CPU is running (debug signals should show activity)
-    assert dut.cycle_count_o.value > 0, "CPU cycle counter should be incrementing"
+    assert int(dut.cycle_count_o.value) > 0, "CPU cycle counter should be incrementing"
     
     dut._log.info("Basic arithmetic test passed")
 
@@ -180,7 +180,7 @@ async def test_cpu_load_store_operations(dut):
     await env.run_cycles(15)
     
     # Verify memory operations occurred
-    assert dut.cycle_count_o.value > 0, "CPU should have executed cycles"
+    assert int(dut.cycle_count_o.value) > 0, "CPU should have executed cycles"
     
     dut._log.info("Load/store test passed")
 
@@ -200,7 +200,7 @@ async def test_cpu_branch_operations(dut):
     await env.run_cycles(20)
     
     # Check that branches affect PC
-    assert dut.debug_pc_o.value is not None, "PC should be updated"
+    assert int(dut.debug_pc_o.value) >= 0, "PC should be updated"
     
     dut._log.info("Branch operations test passed")
 
@@ -224,7 +224,7 @@ async def test_cpu_hazard_handling(dut):
     await env.run_cycles(25)
     
     # Check that stalls occurred when necessary
-    stall_count = dut.stall_count_o.value
+    stall_count = int(dut.stall_count_o.value)
     dut._log.info("Stall count: {}".format(stall_count))
     
     # Some stalls should occur for proper hazard handling
@@ -248,9 +248,9 @@ async def test_cpu_pipeline_forwarding(dut):
     await env.run_cycles(30)
     
     # Check pipeline performance metrics
-    cycle_count = dut.cycle_count_o.value
-    instr_count = dut.instr_count_o.value
-    stall_count = dut.stall_count_o.value
+    cycle_count = int(dut.cycle_count_o.value)
+    instr_count = int(dut.instr_count_o.value)
+    stall_count = int(dut.stall_count_o.value)
     
     dut._log.info("Performance: {} instructions in {} cycles, {} stalls".format(instr_count, cycle_count, stall_count))
     
@@ -282,9 +282,9 @@ async def test_cpu_instruction_sequence(dut):
     await env.run_cycles(50)
     
     # Verify the CPU executed the sequence
-    final_cycle_count = dut.cycle_count_o.value
-    final_instr_count = dut.instr_count_o.value
-    final_stall_count = dut.stall_count_o.value
+    final_cycle_count = int(dut.cycle_count_o.value)
+    final_instr_count = int(dut.instr_count_o.value)
+    final_stall_count = int(dut.stall_count_o.value)
     
     dut._log.info("Final metrics: {} instructions, {} cycles, {} stalls".format(final_instr_count, final_cycle_count, final_stall_count))
     
@@ -309,18 +309,18 @@ async def test_cpu_debug_interface(dut):
     await env.run_cycles(20)
     
     # Check debug signals
-    debug_pc = dut.debug_pc_o.value
-    debug_instr = dut.debug_instr_o.value
-    debug_valid = dut.debug_valid_o.value
+    debug_pc = int(dut.debug_pc_o.value)
+    debug_instr = int(dut.debug_instr_o.value)
+    debug_valid = int(dut.debug_valid_o.value)
     
     dut._log.info("Debug PC: 0x{:08x}".format(debug_pc))
     dut._log.info("Debug Instruction: 0x{:08x}".format(debug_instr))
     dut._log.info("Debug Valid: {}".format(debug_valid))
     
     # Performance counters
-    cycles = dut.cycle_count_o.value
-    instructions = dut.instr_count_o.value
-    stalls = dut.stall_count_o.value
+    cycles = int(dut.cycle_count_o.value)
+    instructions = int(dut.instr_count_o.value)
+    stalls = int(dut.stall_count_o.value)
     
     dut._log.info("Performance counters - Cycles: {}, Instructions: {}, Stalls: {}".format(cycles, instructions, stalls))
     
@@ -348,8 +348,8 @@ async def test_cpu_memory_interface(dut):
     # Check that memory interfaces are being used
     # (In a full integration test, we'd connect actual memory models)
     
-    imem_cyc = dut.imem_cyc_o.value
-    dmem_cyc = dut.dmem_cyc_o.value
+    imem_cyc = int(dut.imem_cyc_o.value)
+    dmem_cyc = int(dut.dmem_cyc_o.value)
     
     dut._log.info("Instruction memory cycle: {}".format(imem_cyc))
     dut._log.info("Data memory cycle: {}".format(dmem_cyc))
@@ -374,9 +374,9 @@ async def test_cpu_reset_behavior(dut):
     await RisingEdge(dut.clk_i)
     
     # Check reset state
-    assert dut.cycle_count_o.value == 0, "Cycle counter should be reset"
-    assert dut.instr_count_o.value == 0, "Instruction counter should be reset"
-    assert dut.stall_count_o.value == 0, "Stall counter should be reset"
+    assert int(dut.cycle_count_o.value) == 0, "Cycle counter should be reset"
+    assert int(dut.instr_count_o.value) == 0, "Instruction counter should be reset"
+    assert int(dut.stall_count_o.value) == 0, "Stall counter should be reset"
     
     # Release reset
     dut.rst_i.value = 0
@@ -387,7 +387,7 @@ async def test_cpu_reset_behavior(dut):
         await RisingEdge(dut.clk_i)
         
     # Check that CPU is now running
-    assert dut.cycle_count_o.value > 0, "CPU should start running after reset"
+    assert int(dut.cycle_count_o.value) > 0, "CPU should start running after reset"
     
     dut._log.info("Reset behavior test passed")
 
@@ -404,13 +404,13 @@ async def test_cpu_pipeline_integrity(dut):
     dut._log.info("Testing pipeline integrity")
     
     # Test that instructions flow through the pipeline correctly
-    initial_cycles = dut.cycle_count_o.value
+    initial_cycles = int(dut.cycle_count_o.value)
     
     # Run enough cycles for instructions to propagate through pipeline
     await env.run_cycles(40)
     
-    final_cycles = dut.cycle_count_o.value
-    instructions_executed = dut.instr_count_o.value
+    final_cycles = int(dut.cycle_count_o.value)
+    instructions_executed = int(dut.instr_count_o.value)
     
     dut._log.info("Executed {} instructions in {} cycles".format(instructions_executed, final_cycles - initial_cycles))
     
@@ -425,11 +425,11 @@ async def test_cpu_pipeline_integrity(dut):
 async def wait_for_stable(dut, signal, cycles=3):
     """Wait for a signal to be stable for specified cycles"""
     stable_count = 0
-    last_value = signal.value
+    last_value = int(signal.value)
     
     while stable_count < cycles:
         await RisingEdge(dut.clk_i)
-        current_value = signal.value
+        current_value = int(signal.value)
         if current_value == last_value:
             stable_count += 1
         else:
