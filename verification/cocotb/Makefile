@@ -7,7 +7,7 @@ PYTHON ?= python3
 SIMULATOR ?= verilator
 
 # Test targets
-.PHONY: test-alu test-regfile test-instruction_memory test-data_memory test-fetch test-decode test-execute test-memory_stage test-writeback test-hazard_unit
+.PHONY: test-alu test-regfile test-instruction_memory test-data_memory test-fetch test-decode test-execute test-memory_stage test-writeback test-hazard_unit test-cpu-integration
 
 test-alu:
 	@echo "Running ALU tests..."
@@ -139,10 +139,34 @@ run( \
     extra_args=['--trace', '--trace-structs'] \
 )"
 
+test-cpu-integration:
+	@echo "Running CPU integration tests..."
+	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	$(PYTHON) -c "\
+from cocotb_test.simulator import run; \
+run( \
+    verilog_sources=[ \
+        '../../rtl/core/eCPU_top.sv', \
+        '../../rtl/core/fetch.sv', \
+        '../../rtl/core/decode.sv', \
+        '../../rtl/core/execute.sv', \
+        '../../rtl/core/memory.sv', \
+        '../../rtl/core/writeback.sv', \
+        '../../rtl/core/hazard_unit.sv', \
+        '../../rtl/core/regfile.sv', \
+        '../../rtl/core/alu.sv', \
+        '../../rtl/core/branch_predictor.sv' \
+    ], \
+    toplevel='eCPU_top', \
+    module='test_cpu_integration', \
+    simulator='$(SIMULATOR)', \
+    extra_args=['--trace', '--trace-structs'] \
+)"
+
 clean:
 	rm -rf __pycache__
 	rm -rf .pytest_cache
 	rm -rf sim_build
 
 # Run all tests
-test-all: test-alu test-regfile test-instruction_memory test-data_memory test-fetch test-decode test-execute test-memory_stage test-writeback test-hazard_unit 
+test-all: test-alu test-regfile test-instruction_memory test-data_memory test-fetch test-decode test-execute test-memory_stage test-writeback test-hazard_unit test-cpu-integration 
