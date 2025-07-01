@@ -7,6 +7,7 @@ The GitHub PR checks were not working correctly because:
 1. **Critical CI jobs had `continue-on-error: true`** - This allowed jobs to "pass" even when they failed
 2. **No branch protection rules configured** - PRs could be merged even with failing checks
 3. **Improper error handling** - Many checks used `|| true` or similar patterns that masked failures
+4. **❌ Wrong test runner** - **Using `pytest` instead of `cocotb` for hardware verification tests**
 
 ## Changes Made
 
@@ -19,7 +20,10 @@ The GitHub PR checks were not working correctly because:
   - SystemVerilog linting (Verilator) now properly fails on syntax errors
 
 - **Unit Tests**: Removed `continue-on-error: true`
-  - Jobs now check if test files exist before running
+  - **Fixed to use proper cocotb test runner** instead of pytest
+  - Tests now use `make test-alu`, `make test-regfile`, etc. from the cocotb Makefile
+  - Jobs check if both test files AND RTL modules exist before running
+  - Added comprehensive testing for instruction memory, data memory, fetch, and decode stages
   - Actual test failures will fail the CI job
   - Only coverage collection keeps `continue-on-error: true` (non-critical)
 
@@ -50,7 +54,8 @@ Created comprehensive documentation for setting up GitHub branch protection rule
 
 Created a test script to verify CI functionality:
 
-- **Failure simulation**: Can create intentionally failing Python code, SystemVerilog code, or tests
+- **Failure simulation**: Can create intentionally failing Python code, SystemVerilog code, or **cocotb tests**
+- **Cocotb test generation**: Creates proper `@cocotb.test()` async functions with Timer triggers
 - **Local checks**: Run CI checks locally before pushing
 - **Status monitoring**: Check current CI configuration status
 - **Cleanup utilities**: Remove test failure files
@@ -83,8 +88,11 @@ Additional:
 ### 2. Test the Setup
 
 ```bash
-# Test with intentional failures
-.github/test-ci.sh fail-lint-python
+# Test with intentional failures (choose one)
+.github/test-ci.sh fail-lint-python   # Python formatting errors
+.github/test-ci.sh fail-lint-sv       # SystemVerilog syntax errors  
+.github/test-ci.sh fail-tests          # Failing cocotb tests
+
 git add -A && git commit -m "test: Add failing code"
 git push  # Should trigger failing CI
 

@@ -52,26 +52,45 @@ EOF
             ;;
             
         "test-failure")
-            echo "Creating failing test..."
+            echo "Creating failing cocotb test..."
             mkdir -p verification/cocotb/
             cat > verification/cocotb/test_fail.py << 'EOF'
-import pytest
+import cocotb
+from cocotb.triggers import Timer
 
-def test_intentional_failure():
-    """This test is designed to fail"""
-    assert False, "This test intentionally fails to test CI"
+@cocotb.test()
+async def test_intentional_failure(dut):
+    """This cocotb test is designed to fail"""
+    await Timer(1, units="ns")
+    assert False, "This cocotb test intentionally fails to test CI"
 
-def test_another_failure():
-    """Another failing test"""
-    assert 1 == 2, "Math is broken!"
+@cocotb.test()
+async def test_another_failure(dut):
+    """Another failing cocotb test"""
+    await Timer(1, units="ns") 
+    assert 1 == 2, "Math is still broken in cocotb!"
 EOF
-            echo "✅ Created verification/cocotb/test_fail.py with failing tests"
+            
+            # Also create a simple failing RTL module for the test
+            mkdir -p rtl/test/
+            cat > rtl/test/fail_module.sv << 'EOF'
+module fail_module (
+    input wire clk_i,
+    input wire rst_i,
+    output wire [31:0] data_o
+);
+    assign data_o = 32'hDEADBEEF;
+endmodule
+EOF
+            echo "✅ Created verification/cocotb/test_fail.py with failing cocotb tests"
+            echo "✅ Created rtl/test/fail_module.sv for testing"
             ;;
             
         "clean")
             echo "Cleaning up test files..."
             rm -f scripts/test_fail.py
-            rm -f rtl/test/bad_module.sv  
+            rm -f rtl/test/bad_module.sv
+            rm -f rtl/test/fail_module.sv
             rm -f verification/cocotb/test_fail.py
             rmdir scripts/ 2>/dev/null || true
             rmdir rtl/test/ 2>/dev/null || true

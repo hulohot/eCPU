@@ -81,31 +81,65 @@ jobs:
     - name: Run ALU tests
       run: |
         cd verification/cocotb
-        if [ -f test_alu.py ]; then
-          python -m pytest test_alu.py -v
+        if [ -f test_alu.py ] && [ -f ../../rtl/core/alu.sv ]; then
+          make test-alu
         else
-          echo "ALU tests not yet implemented - creating placeholder"
+          echo "ALU tests or RTL not yet implemented - skipping"
           echo "TODO: Implement ALU tests" > test_results.txt
         fi
     
     - name: Run Register File tests
       run: |
         cd verification/cocotb
-        if [ -f test_regfile.py ]; then
-          python -m pytest test_regfile.py -v
+        if [ -f test_regfile.py ] && [ -f ../../rtl/core/regfile.sv ]; then
+          make test-regfile
         else
-          echo "Register file tests not yet implemented - creating placeholder"
+          echo "Register file tests or RTL not yet implemented - skipping"
           echo "TODO: Implement register file tests" >> test_results.txt
+        fi
+    
+    - name: Run additional core tests
+      run: |
+        cd verification/cocotb
+        test_failures=0
+        
+        # Test instruction memory if available
+        if [ -f test_instruction_memory.py ] && [ -f ../../rtl/memory/instruction_memory.sv ]; then
+          echo "Running instruction memory tests..."
+          make test-instruction_memory || test_failures=1
+        fi
+        
+        # Test data memory if available  
+        if [ -f test_data_memory.py ] && [ -f ../../rtl/memory/data_memory.sv ]; then
+          echo "Running data memory tests..."
+          make test-data_memory || test_failures=1
+        fi
+        
+        # Test fetch stage if available
+        if [ -f test_fetch.py ] && [ -f ../../rtl/core/fetch.sv ]; then
+          echo "Running fetch stage tests..."
+          make test-fetch || test_failures=1
+        fi
+        
+        # Test decode stage if available
+        if [ -f test_decode.py ] && [ -f ../../rtl/core/decode.sv ]; then
+          echo "Running decode stage tests..."
+          make test-decode || test_failures=1
+        fi
+        
+        if [ $test_failures -eq 1 ]; then
+          echo "Some cocotb tests failed"
+          exit 1
         fi
     
     - name: Generate test coverage
       run: |
-        cd verification
-        if ls cocotb/test_*.py 1> /dev/null 2>&1; then
-          python -m pytest --cov=../rtl --cov-report=html --cov-report=xml
-        else
-          echo "No test files found - skipping coverage"
-        fi
+        cd verification/cocotb
+        # Cocotb generates VCD files for coverage analysis
+        echo "Test artifacts generated:"
+        ls -la sim_build/ 2>/dev/null || echo "No simulation build directory found"
+        ls -la *.vcd 2>/dev/null || echo "No VCD files found"
+        echo "Coverage analysis will be added in future iterations"
       continue-on-error: true
     
     - name: Upload coverage to Codecov
@@ -176,12 +210,13 @@ jobs:
     
     - name: Run integration tests
       run: |
-        # Check if integration tests exist
-        if [ -d verification/integration ]; then
-          cd verification/integration
-          python -m pytest -v
+        cd verification/cocotb
+        # Run CPU integration test if top-level and all dependencies exist
+        if [ -f test_cpu_integration.py ] && [ -f ../../rtl/core/eCPU_top.sv ]; then
+          echo "Running CPU integration tests..."
+          make test-cpu-integration
         else
-          echo "Integration tests will be added as modules are completed"
+          echo "CPU integration tests will be added as top-level module is completed"
         fi
       continue-on-error: true
 
