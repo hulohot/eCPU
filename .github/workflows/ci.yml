@@ -29,11 +29,11 @@ jobs:
     
     - name: Check Python formatting with Black
       run: |
-        black --check verification/ scripts/ || true
+        black --check verification/ scripts/
     
     - name: Lint Python code with flake8
       run: |
-        flake8 verification/ scripts/ || true
+        flake8 verification/ scripts/
     
     - name: Install Verilator
       run: |
@@ -43,10 +43,18 @@ jobs:
     - name: Lint SystemVerilog/Verilog files
       run: |
         # Basic syntax check with Verilator
+        lint_failed=0
         find rtl/ -name "*.sv" -o -name "*.v" | head -5 | while read file; do
           echo "Checking $file"
-          verilator --lint-only -Wall "$file" || echo "Lint warnings in $file"
+          if ! verilator --lint-only -Wall "$file"; then
+            echo "Lint failed for $file"
+            lint_failed=1
+          fi
         done
+        if [ $lint_failed -eq 1 ]; then
+          echo "SystemVerilog linting failed"
+          exit 1
+        fi
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -73,19 +81,31 @@ jobs:
     - name: Run ALU tests
       run: |
         cd verification/cocotb
-        python -m pytest test_alu.py -v || echo "ALU tests need implementation"
-      continue-on-error: true
+        if [ -f test_alu.py ]; then
+          python -m pytest test_alu.py -v
+        else
+          echo "ALU tests not yet implemented - creating placeholder"
+          echo "TODO: Implement ALU tests" > test_results.txt
+        fi
     
     - name: Run Register File tests
       run: |
         cd verification/cocotb
-        python -m pytest test_regfile.py -v || echo "Register file tests need implementation"
-      continue-on-error: true
+        if [ -f test_regfile.py ]; then
+          python -m pytest test_regfile.py -v
+        else
+          echo "Register file tests not yet implemented - creating placeholder"
+          echo "TODO: Implement register file tests" >> test_results.txt
+        fi
     
     - name: Generate test coverage
       run: |
         cd verification
-        python -m pytest --cov=../rtl --cov-report=html --cov-report=xml || echo "Coverage collection needs setup"
+        if ls cocotb/test_*.py 1> /dev/null 2>&1; then
+          python -m pytest --cov=../rtl --cov-report=html --cov-report=xml
+        else
+          echo "No test files found - skipping coverage"
+        fi
       continue-on-error: true
     
     - name: Upload coverage to Codecov
@@ -109,14 +129,29 @@ jobs:
     - name: Check basic synthesis
       run: |
         # Quick synthesis check for individual modules
-        echo "module test_alu; alu u_alu(.operand_a_i(32'h0), .operand_b_i(32'h0), .alu_op_i(4'h0), .result_o(), .zero_o(), .negative_o(), .overflow_o(), .carry_o()); endmodule" > test_synth.v
-        yosys -p "read_verilog rtl/core/alu.sv test_synth.v; hierarchy -top test_alu; proc; opt; stat" || echo "ALU synthesis check failed"
-      continue-on-error: true
+        synthesis_failed=0
+        
+        # Check if ALU module exists and can be synthesized
+        if [ -f rtl/core/alu.sv ]; then
+          echo "module test_alu; alu u_alu(.operand_a_i(32'h0), .operand_b_i(32'h0), .alu_op_i(4'h0), .result_o(), .zero_o(), .negative_o(), .overflow_o(), .carry_o()); endmodule" > test_synth.v
+          if ! yosys -p "read_verilog rtl/core/alu.sv test_synth.v; hierarchy -top test_alu; proc; opt; stat"; then
+            echo "ALU synthesis check failed"
+            synthesis_failed=1
+          fi
+          rm -f test_synth.v
+        else
+          echo "ALU module not found - skipping synthesis check"
+        fi
+        
+        if [ $synthesis_failed -eq 1 ]; then
+          echo "Synthesis checks failed"
+          exit 1
+        fi
     
     - name: iCEBreaker synthesis check
       run: |
         # This will fail until we have a complete top-level, but checks tool installation
-        make synth-check || echo "Full synthesis not yet available"
+        make synth-check || echo "Full synthesis not yet available - this is expected during development"
       continue-on-error: true
 
   integration-tests:
@@ -141,8 +176,13 @@ jobs:
     
     - name: Run integration tests
       run: |
-        # These will be added as the CPU implementation progresses
-        echo "Integration tests will be added as modules are completed"
+        # Check if integration tests exist
+        if [ -d verification/integration ]; then
+          cd verification/integration
+          python -m pytest -v
+        else
+          echo "Integration tests will be added as modules are completed"
+        fi
       continue-on-error: true
 
   documentation:
@@ -197,4 +237,12 @@ jobs:
         find verification/ -name "*.py" | wc -l | xargs echo "Test files:"
         echo ""
         echo "Recent commits:"
-        git log --oneline -5 || echo "No git history" 
+        git log --oneline -5 || echo "No git history"
+        
+        # Fail this job if critical jobs failed
+        if [[ "${{ needs.lint.result }}" == "failure" || "${{ needs.unit-tests.result }}" == "failure" || "${{ needs.synthesis-check.result }}" == "failure" ]]; then
+          echo "❌ Critical checks failed - PR should not be merged"
+          exit 1
+        else
+          echo "✅ All critical checks passed"
+        fi 
