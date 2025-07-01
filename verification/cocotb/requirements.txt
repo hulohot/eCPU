@@ -3,6 +3,7 @@
 
 # Testing framework
 cocotb>=1.8.0
+cocotb-test>=0.2.4
 
 # Enhanced terminal output
 rich>=13.0.0

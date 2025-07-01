@@ -76,13 +76,28 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install cocotb cocotb-test pytest pytest-cov pytest-xdist
+        pip install wheel setuptools
+        pip install -r verification/cocotb/requirements.txt
+        pip install pytest-cov pytest-xdist
+        echo "Installed packages:"
+        pip list | grep -E "(cocotb|pytest)"
+    
+    - name: Verify cocotb installation
+      run: |
+        python -c "import cocotb; print(f'cocotb version: {cocotb.__version__}')"
+        python -c "import cocotb_test; print('cocotb_test imported successfully')"
     
     - name: Run ALU tests
       run: |
         cd verification/cocotb
         if [ -f test_alu.py ] && [ -f ../../rtl/core/alu.sv ]; then
-          make test-alu
+          echo "Attempting to run ALU tests..."
+          if make test-alu; then
+            echo "✅ ALU tests passed via Makefile"
+          else
+            echo "⚠️ Makefile approach failed, trying alternative runner..."
+            python run_test.py alu
+          fi
         else
           echo "ALU tests or RTL not yet implemented - skipping"
           echo "TODO: Implement ALU tests" > test_results.txt
@@ -92,7 +107,13 @@ jobs:
       run: |
         cd verification/cocotb
         if [ -f test_regfile.py ] && [ -f ../../rtl/core/regfile.sv ]; then
-          make test-regfile
+          echo "Attempting to run Register File tests..."
+          if make test-regfile; then
+            echo "✅ Register File tests passed via Makefile"
+          else
+            echo "⚠️ Makefile approach failed, trying alternative runner..."
+            python run_test.py regfile
+          fi
         else
           echo "Register file tests or RTL not yet implemented - skipping"
           echo "TODO: Implement register file tests" >> test_results.txt
@@ -206,7 +227,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y verilator
         python -m pip install --upgrade pip
-        pip install cocotb cocotb-test pytest
+        pip install wheel setuptools
+        pip install -r verification/cocotb/requirements.txt
     
     - name: Run integration tests
       run: |
