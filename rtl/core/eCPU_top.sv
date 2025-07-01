@@ -73,8 +73,11 @@ module eCPU_top #(
     logic [REG_ADDR_WIDTH-1:0] rd_addr_d;
     logic [XLEN-1:0]       rs1_data_d;
     logic [XLEN-1:0]       rs2_data_d;
+    logic [XLEN-1:0]       rs1_data_regfile;
+    logic [XLEN-1:0]       rs2_data_regfile;
     logic [XLEN-1:0]       imm_d;
     logic [3:0]            alu_op_d;
+    logic                  alu_src_d;
     logic                  reg_write_d;
     logic                  mem_read_d;
     logic                  mem_write_d;
@@ -179,9 +182,9 @@ module eCPU_top #(
         
         // Read ports
         .rs1_addr_i(rs1_addr_d),
-        .rs1_data_o(rs1_data_d),
+        .rs1_data_o(rs1_data_regfile),
         .rs2_addr_i(rs2_addr_d),
-        .rs2_data_o(rs2_data_d),
+        .rs2_data_o(rs2_data_regfile),
         
         // Write port
         .rd_addr_i(rd_addr_w),
@@ -246,8 +249,8 @@ module eCPU_top #(
         .stall_i(hazard_stall),
         
         // Register file interface (data comes from register file)
-        .rs1_data_i(rs1_data_d),
-        .rs2_data_i(rs2_data_d),
+        .rs1_data_i(rs1_data_regfile),
+        .rs2_data_i(rs2_data_regfile),
         .rs1_addr_o(rs1_addr_d),  // Address to register file
         .rs2_addr_o(rs2_addr_d),  // Address to register file
         
@@ -267,6 +270,7 @@ module eCPU_top #(
         .rs2_data_o(rs2_data_d),
         .imm_o(imm_d),
         .alu_op_o(alu_op_d),
+        .alu_src_o(alu_src_d),
         .reg_write_o(reg_write_d),
         .mem_read_o(mem_read_d),
         .mem_write_o(mem_write_d),
@@ -296,6 +300,7 @@ module eCPU_top #(
         .rd_addr_i(rd_addr_d),
         .imm_i(imm_d),
         .alu_op_i(alu_op_d),
+        .alu_src_i(alu_src_d),
         .reg_write_i(reg_write_d),
         .mem_read_i(mem_read_d),
         .mem_write_i(mem_write_d),

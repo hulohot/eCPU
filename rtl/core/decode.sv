@@ -52,6 +52,7 @@ module decode #(
     output logic [XLEN-1:0]                 rs2_data_o,      // Source register 2 data
     output logic [XLEN-1:0]                 imm_o,           // Immediate value
     output logic [3:0]                      alu_op_o,        // ALU operation
+    output logic                             alu_src_o,       // ALU source: 0=register, 1=immediate
     output logic                             reg_write_o,     // Register write enable
     output logic                             mem_read_o,      // Memory read enable
     output logic                             mem_write_o,     // Memory write enable
@@ -120,6 +121,7 @@ module decode #(
     logic        jump;
     logic [2:0]  branch_type;
     logic [3:0]  alu_op;
+    logic        alu_src;
     
     // ========================================
     // Instruction Field Extraction
@@ -194,33 +196,39 @@ module decode #(
         jump         = 1'b0;
         branch_type  = 3'b000;
         alu_op       = ALU_ADD;
+        alu_src      = 1'b0;    // Default to register
         
         case (opcode)
             OP_LUI: begin
                 reg_write = 1'b1;
                 alu_op = ALU_LUI;
+                alu_src = 1'b1; // Use immediate
             end
             
             OP_AUIPC: begin
                 reg_write = 1'b1;
                 alu_op = ALU_ADD; // PC + immediate
+                alu_src = 1'b1; // Use immediate
             end
             
             OP_JAL: begin
                 reg_write = 1'b1;
                 jump = 1'b1;
                 alu_op = ALU_ADD; // PC + 4 for return address
+                alu_src = 1'b1; // Use immediate
             end
             
             OP_JALR: begin
                 reg_write = 1'b1;
                 jump = 1'b1;
                 alu_op = ALU_COPY; // rs1 + immediate for target
+                alu_src = 1'b1; // Use immediate
             end
             
             OP_BRANCH: begin
                 branch = 1'b1;
                 branch_type = funct3;
+                alu_src = 1'b0; // Use register (rs2) for comparison
                 case (funct3)
                     3'b000: alu_op = ALU_SUB; // BEQ - subtract and check zero
                     3'b001: alu_op = ALU_SUB; // BNE - subtract and check not zero
@@ -236,6 +244,7 @@ module decode #(
                 reg_write = 1'b1;
                 mem_read = 1'b1;
                 alu_op = ALU_ADD; // rs1 + immediate for address
+                alu_src = 1'b1; // Use immediate for address calculation
                 case (funct3)
                     3'b000: mem_size = 3'b000; // LB
                     3'b001: mem_size = 3'b001; // LH
@@ -249,6 +258,7 @@ module decode #(
             OP_STORE: begin
                 mem_write = 1'b1;
                 alu_op = ALU_ADD; // rs1 + immediate for address
+                alu_src = 1'b1; // Use immediate for address calculation
                 case (funct3)
                     3'b000: mem_size = 3'b000; // SB
                     3'b001: mem_size = 3'b001; // SH
@@ -259,6 +269,7 @@ module decode #(
             
             OP_IMM: begin
                 reg_write = 1'b1;
+                alu_src = 1'b1; // Use immediate for immediate instructions
                 case (funct3)
                     3'b000: alu_op = ALU_ADD;  // ADDI
                     3'b010: alu_op = ALU_SLT;  // SLTI
@@ -277,6 +288,7 @@ module decode #(
             
             OP_REG: begin
                 reg_write = 1'b1;
+                alu_src = 1'b0; // Use register for register-register instructions
                 case (funct3)
                     3'b000: begin
                         if (funct7[5]) alu_op = ALU_SUB; // SUB
@@ -334,6 +346,7 @@ module decode #(
             rs2_data_o <= {XLEN{1'b0}};
             imm_o <= {XLEN{1'b0}};
             alu_op_o <= ALU_ADD;
+            alu_src_o <= 1'b0;
             reg_write_o <= 1'b0;
             mem_read_o <= 1'b0;
             mem_write_o <= 1'b0;
@@ -352,6 +365,7 @@ module decode #(
             rs2_data_o <= rs2_data_i;
             imm_o <= immediate;
             alu_op_o <= alu_op;
+            alu_src_o <= alu_src;
             reg_write_o <= reg_write;
             mem_read_o <= mem_read;
             mem_write_o <= mem_write;
