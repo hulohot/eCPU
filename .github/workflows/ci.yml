@@ -29,11 +29,11 @@ jobs:
     
     - name: Check Python formatting with Black
       run: |
-        black --check verification/ scripts/ || true
+        black --check verification/ scripts/
     
     - name: Lint Python code with flake8
       run: |
-        flake8 verification/ scripts/ || true
+        flake8 verification/ scripts/
     
     - name: Install Verilator
       run: |
@@ -43,10 +43,18 @@ jobs:
     - name: Lint SystemVerilog/Verilog files
       run: |
         # Basic syntax check with Verilator
+        lint_failed=0
         find rtl/ -name "*.sv" -o -name "*.v" | head -5 | while read file; do
           echo "Checking $file"
-          verilator --lint-only -Wall "$file" || echo "Lint warnings in $file"
+          if ! verilator --lint-only -Wall "$file"; then
+            echo "Lint failed for $file"
+            lint_failed=1
+          fi
         done
+        if [ $lint_failed -eq 1 ]; then
+          echo "SystemVerilog linting failed"
+          exit 1
+        fi
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -68,24 +76,97 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install cocotb cocotb-test pytest pytest-cov pytest-xdist
+        pip install wheel setuptools
+        echo "Installing cocotb dependencies directly..."
+        pip install cocotb>=1.8.0
+        pip install cocotb-test>=0.2.4
+        pip install pytest>=7.0.0
+        pip install pytest-cov pytest-xdist
+        pip install rich>=13.0.0
+        echo "Installed packages:"
+        pip list | grep -E "(cocotb|pytest|rich)"
+        echo "Python path:"
+        python -c "import sys; print('\\n'.join(sys.path))"
+    
+    - name: Verify cocotb installation
+      run: |
+        python -c "import cocotb; print(f'cocotb version: {cocotb.__version__}')"
+        python -c "import cocotb_test; print('cocotb_test imported successfully')"
     
     - name: Run ALU tests
       run: |
         cd verification/cocotb
-        python -m pytest test_alu.py -v || echo "ALU tests need implementation"
-      continue-on-error: true
+        if [ -f test_alu.py ] && [ -f ../../rtl/core/alu.sv ]; then
+          echo "Attempting to run ALU tests..."
+          if make test-alu; then
+            echo "✅ ALU tests passed via Makefile"
+          else
+            echo "⚠️ Makefile approach failed, trying alternative runner..."
+            python run_test.py alu
+          fi
+        else
+          echo "ALU tests or RTL not yet implemented - skipping"
+          echo "TODO: Implement ALU tests" > test_results.txt
+        fi
     
     - name: Run Register File tests
       run: |
         cd verification/cocotb
-        python -m pytest test_regfile.py -v || echo "Register file tests need implementation"
-      continue-on-error: true
+        if [ -f test_regfile.py ] && [ -f ../../rtl/core/regfile.sv ]; then
+          echo "Attempting to run Register File tests..."
+          if make test-regfile; then
+            echo "✅ Register File tests passed via Makefile"
+          else
+            echo "⚠️ Makefile approach failed, trying alternative runner..."
+            python run_test.py regfile
+          fi
+        else
+          echo "Register file tests or RTL not yet implemented - skipping"
+          echo "TODO: Implement register file tests" >> test_results.txt
+        fi
+    
+    - name: Run additional core tests
+      run: |
+        cd verification/cocotb
+        test_failures=0
+        
+        # Test instruction memory if available
+        if [ -f test_instruction_memory.py ] && [ -f ../../rtl/memory/instruction_memory.sv ]; then
+          echo "Running instruction memory tests..."
+          make test-instruction_memory || test_failures=1
+        fi
+        
+        # Test data memory if available  
+        if [ -f test_data_memory.py ] && [ -f ../../rtl/memory/data_memory.sv ]; then
+          echo "Running data memory tests..."
+          make test-data_memory || test_failures=1
+        fi
+        
+        # Test fetch stage if available
+        if [ -f test_fetch.py ] && [ -f ../../rtl/core/fetch.sv ]; then
+          echo "Running fetch stage tests..."
+          make test-fetch || test_failures=1
+        fi
+        
+        # Test decode stage if available
+        if [ -f test_decode.py ] && [ -f ../../rtl/core/decode.sv ]; then
+          echo "Running decode stage tests..."
+          make test-decode || test_failures=1
+        fi
+        
+        if [ $test_failures -eq 1 ]; then
+          echo "Some cocotb tests failed"
+          exit 1
+        fi
     
     - name: Generate test coverage
       run: |
-        cd verification
-        python -m pytest --cov=../rtl --cov-report=html --cov-report=xml || echo "Coverage collection needs setup"
+        cd verification/cocotb
+        # Cocotb generates VCD files for coverage analysis
+        echo "Test artifacts generated:"
+        ls -la sim_build/ 2>/dev/null || echo "No simulation build directory found"
+        ls -la *.vcd 2>/dev/null || echo "No VCD files found"
+        echo "Coverage analysis will be added in future iterations"
       continue-on-error: true
     
     - name: Upload coverage to Codecov
@@ -109,14 +190,29 @@ jobs:
     - name: Check basic synthesis
       run: |
         # Quick synthesis check for individual modules
-        echo "module test_alu; alu u_alu(.operand_a_i(32'h0), .operand_b_i(32'h0), .alu_op_i(4'h0), .result_o(), .zero_o(), .negative_o(), .overflow_o(), .carry_o()); endmodule" > test_synth.v
-        yosys -p "read_verilog rtl/core/alu.sv test_synth.v; hierarchy -top test_alu; proc; opt; stat" || echo "ALU synthesis check failed"
-      continue-on-error: true
+        synthesis_failed=0
+        
+        # Check if ALU module exists and can be synthesized
+        if [ -f rtl/core/alu.sv ]; then
+          echo "module test_alu; alu u_alu(.operand_a_i(32'h0), .operand_b_i(32'h0), .alu_op_i(4'h0), .result_o(), .zero_o(), .negative_o(), .overflow_o(), .carry_o()); endmodule" > test_synth.v
+          if ! yosys -p "read_verilog rtl/core/alu.sv test_synth.v; hierarchy -top test_alu; proc; opt; stat"; then
+            echo "ALU synthesis check failed"
+            synthesis_failed=1
+          fi
+          rm -f test_synth.v
+        else
+          echo "ALU module not found - skipping synthesis check"
+        fi
+        
+        if [ $synthesis_failed -eq 1 ]; then
+          echo "Synthesis checks failed"
+          exit 1
+        fi
     
     - name: iCEBreaker synthesis check
       run: |
         # This will fail until we have a complete top-level, but checks tool installation
-        make synth-check || echo "Full synthesis not yet available"
+        make synth-check || echo "Full synthesis not yet available - this is expected during development"
       continue-on-error: true
 
   integration-tests:
@@ -137,12 +233,19 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y verilator
         python -m pip install --upgrade pip
-        pip install cocotb cocotb-test pytest
+        pip install wheel setuptools
+        pip install -r verification/cocotb/requirements.txt
     
     - name: Run integration tests
       run: |
-        # These will be added as the CPU implementation progresses
-        echo "Integration tests will be added as modules are completed"
+        cd verification/cocotb
+        # Run CPU integration test if top-level and all dependencies exist
+        if [ -f test_cpu_integration.py ] && [ -f ../../rtl/core/eCPU_top.sv ]; then
+          echo "Running CPU integration tests..."
+          make test-cpu-integration
+        else
+          echo "CPU integration tests will be added as top-level module is completed"
+        fi
       continue-on-error: true
 
   documentation:
@@ -197,4 +300,12 @@ jobs:
         find verification/ -name "*.py" | wc -l | xargs echo "Test files:"
         echo ""
         echo "Recent commits:"
-        git log --oneline -5 || echo "No git history" 
+        git log --oneline -5 || echo "No git history"
+        
+        # Fail this job if critical jobs failed
+        if [[ "${{ needs.lint.result }}" == "failure" || "${{ needs.unit-tests.result }}" == "failure" || "${{ needs.synthesis-check.result }}" == "failure" ]]; then
+          echo "❌ Critical checks failed - PR should not be merged"
+          exit 1
+        else
+          echo "✅ All critical checks passed"
+        fi 
