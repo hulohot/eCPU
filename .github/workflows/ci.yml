@@ -77,10 +77,16 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install wheel setuptools
-        pip install -r verification/cocotb/requirements.txt
+        echo "Installing cocotb dependencies directly..."
+        pip install cocotb>=1.8.0
+        pip install cocotb-test>=0.2.4
+        pip install pytest>=7.0.0
         pip install pytest-cov pytest-xdist
+        pip install rich>=13.0.0
         echo "Installed packages:"
-        pip list | grep -E "(cocotb|pytest)"
+        pip list | grep -E "(cocotb|pytest|rich)"
+        echo "Python path:"
+        python -c "import sys; print('\\n'.join(sys.path))"
     
     - name: Verify cocotb installation
       run: |

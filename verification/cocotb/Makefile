@@ -11,7 +11,7 @@ SIMULATOR ?= verilator
 
 test-alu:
 	@echo "Running ALU tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
@@ -24,7 +24,7 @@ run( \
 
 test-regfile:
 	@echo "Running register file tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
@@ -37,7 +37,7 @@ run( \
 
 test-instruction_memory:
 	@echo "Running instruction memory tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
@@ -50,7 +50,7 @@ run( \
 
 test-data_memory:
 	@echo "Running data memory tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
@@ -63,7 +63,7 @@ run( \
 
 test-fetch:
 	@echo "Running fetch stage tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
@@ -76,7 +76,7 @@ run( \
 
 test-decode:
 	@echo "Running decode stage tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
@@ -89,7 +89,7 @@ run( \
 
 test-execute:
 	@echo "Running execute stage tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
@@ -102,7 +102,7 @@ run( \
 
 test-memory_stage:
 	@echo "Running memory stage tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
@@ -115,7 +115,7 @@ run( \
 
 test-writeback:
 	@echo "Running writeback stage tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
@@ -128,7 +128,7 @@ run( \
 
 test-hazard_unit:
 	@echo "Running hazard unit tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
@@ -141,7 +141,7 @@ run( \
 
 test-cpu-integration:
 	@echo "Running CPU integration tests..."
-	env -i PATH="/usr/local/bin:/usr/bin:/bin" PYTHONPATH="." \
+	PYTHONPATH="." \
 	$(PYTHON) -c "\
 from cocotb_test.simulator import run; \
 run( \
